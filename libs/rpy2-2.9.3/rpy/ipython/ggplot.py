@@ -24,12 +24,11 @@ class GGPlotSVG(ggplot2.GGPlot):
     def svg(self, width = 6, height = 4):
         """ Build an Ipython "Image" (requires iPython). """
         with grdevices.render_to_bytesio(grdevices.svg,
-                                         width=width,
-                                         height=height) as b:
+                                             width=width,
+                                             height=height) as b:
             robjects.r("print")(self)
             data = b.getvalue()
-            ip_img = Image(data=data, format='svg', embed=False)
-            return ip_img
+            return Image(data=data, format='svg', embed=False)
 
 def image_png(gg, width=800, height=400):
     with grdevices.render_to_bytesio(grdevices.png,
@@ -39,8 +38,7 @@ def image_png(gg, width=800, height=400):
                                      antialias="subpixel") as b:
         robjects.r("print")(gg)
     data = b.getvalue()
-    ip_img = Image(data=data, format='png', embed=True)
-    return ip_img
+    return Image(data=data, format='png', embed=True)
 
 def display_png(gg, width=800, height=400):
     ip_img = image_png(gg, width=width, height=height)
@@ -49,8 +47,7 @@ def display_png(gg, width=800, height=400):
 def set_png_formatter():
     # register display func with PNG formatter:
     png_formatter = get_ipython().display_formatter.formatters['image/png']
-    dpi = png_formatter.for_type(ggplot2.GGPlot, display_png)
-    return dpi
+    return png_formatter.for_type(ggplot2.GGPlot, display_png)
 
 class PNGplot(object):
     """

@@ -21,8 +21,7 @@ def tapply(seq, tag, fun):
         except LookupError as le:
             tag_grp[t] = [i, ]
 
-    res = [(tag, fun([seq[i] for i in ti])) for tag, ti in tag_grp.items()]
-    return res
+    return [(tag, fun([seq[i] for i in ti])) for tag, ti in tag_grp.items()]
 
 
 def listify(fun):

@@ -42,15 +42,15 @@ def default_symbol_check_after(symbol_mapping):
                     if i == idx:
                         resolutions[py_symbol] = [s,]
                     else:
-                        new_py_symbol = py_symbol + '_'
+                        new_py_symbol = f'{py_symbol}_'
                         resolutions[new_py_symbol] = [s,]
             except ValueError:
                 # I am unsure about what to do at this point:
                 # add it as a conflict
-                conflicts[py_symbol] = r_symbols 
+                conflicts[py_symbol] = r_symbols
         else:
             # no automatic resolution if more than 2
-            conflicts[py_symbol] = r_symbols 
+            conflicts[py_symbol] = r_symbols
     return conflicts, resolutions
 
 
@@ -92,7 +92,7 @@ def _fix_map_symbols(symbol_mapping,
     """
     if len(conflicts) > 0:
         msg = msg_prefix
-        msg += '\n- '.join(('%s -> %s' %(k, ', '.join(v)) for k,v in conflicts.items()))
+        msg += '\n- '.join(f"{k} -> {', '.join(v)}" for k,v in conflicts.items())
         if on_conflict == 'fail':
             msg += '\nTo turn this exception into a simple' +\
                    ' warning use the parameter' +\

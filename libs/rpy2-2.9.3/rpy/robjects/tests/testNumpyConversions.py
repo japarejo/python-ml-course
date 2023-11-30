@@ -185,7 +185,7 @@ class NumpyConversionsTestCase(unittest.TestCase):
             "A": robjects.vectors.IntVector([1,2,3]),
             "B": robjects.vectors.IntVector([1,2,3])})
         b = df.rx2('B')
-        self.assertEquals(tuple((1,2,3)), tuple(b))
+        self.assertEquals((1, 2, 3), tuple(b))
 
 def suite():
     if has_numpy:

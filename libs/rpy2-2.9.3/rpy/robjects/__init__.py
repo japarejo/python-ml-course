@@ -64,8 +64,7 @@ def reval(string, envir = _globalenv):
              (default: R's global environment)
     """
     p = rinterface.parse(string)
-    res = _reval(p, envir = envir)
-    return res
+    return _reval(p, envir = envir)
 
 default_converter = conversion.Converter('base empty converter')
 
@@ -81,20 +80,13 @@ def sexpvector_to_ro(obj):
         rcls = [None]
 
     if 'data.frame' in rcls:
-        res = vectors.DataFrame(obj)
-        return res
+        return vectors.DataFrame(obj)
     try:
         dim = obj.do_slot("dim")
-        if len(dim) == 2:
-            res = vectors.Matrix(obj)
-        else:
-            res = vectors.Array(obj)
+        res = vectors.Matrix(obj) if len(dim) == 2 else vectors.Array(obj)
     except LookupError as le:
         if obj.typeof == rinterface.INTSXP:
-            if 'factor' in rcls:
-                res = vectors.FactorVector(obj)
-            else:
-                res = vectors.IntVector(obj)
+            res = vectors.FactorVector(obj) if 'factor' in rcls else vectors.IntVector(obj)
         elif obj.typeof == rinterface.REALSXP:
             if obj.rclass[0] == 'POSIXct':
                 res = vectors.POSIXct(obj)
@@ -124,15 +116,13 @@ def sequence_to_vector(lst):
     i = None
     for i, elt in enumerate(lst):
         cls = type(elt)
-        if cls in TYPEORDER:
-            if TYPEORDER[cls][0] > curr_typeorder:
-                curr_typeorder, curr_type = TYPEORDER[cls]
-        else:
+        if cls not in TYPEORDER:
             raise ValueError('The element %i in the list has a type that cannot be handled.' % i)
+        if TYPEORDER[cls][0] > curr_typeorder:
+            curr_typeorder, curr_type = TYPEORDER[cls]
     if i is None:
         raise ValueError('The parameter "lst" is an empty sequence. The type of the corresponding R vector cannot be determined.')
-    res = curr_type(lst)
-    return res
+    return curr_type(lst)
 
 
 @default_converter.ri2ro.register(SexpClosure)
@@ -193,12 +183,21 @@ def _(obj):
     return rinterface.SexpVector([obj, ], rinterface.LGLSXP)
 
 def int2ri(obj):
-    # special case for NA_Logical
-    if obj is rinterface.NA_Logical:
-        res = rinterface.SexpVector([obj, ], rinterface.LGLSXP)
-    else:
-        res = rinterface.SexpVector([obj, ], rinterface.INTSXP)
-    return res
+    return (
+        rinterface.SexpVector(
+            [
+                obj,
+            ],
+            rinterface.LGLSXP,
+        )
+        if obj is rinterface.NA_Logical
+        else rinterface.SexpVector(
+            [
+                obj,
+            ],
+            rinterface.INTSXP,
+        )
+    )
 
 default_converter.py2ri.register(int, int2ri)
 
@@ -343,7 +342,7 @@ class R(object):
         s = super(R, self).__str__()
         s += os.linesep
         version = self["version"]
-        tmp = [n+': '+val[0] for n, val in zip(version.names, version)]
+        tmp = [f'{n}: {val[0]}' for n, val in zip(version.names, version)]
         s += str.join(os.linesep, tmp)
         return s
 

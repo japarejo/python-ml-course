@@ -15,9 +15,7 @@ class OrderTestCase(unittest.TestCase):
 
 
 def suite():
-    suite = unittest.TestLoader().loadTestsFromTestCase(OrderTestCase)
-    #suite.addTest(unittest.TestLoader().loadTestsFromTestCase(VectorizeTestCase))
-    return suite
+    return unittest.TestLoader().loadTestsFromTestCase(OrderTestCase)
 
 if __name__ == '__main__':
      unittest.main()

@@ -24,8 +24,7 @@ class SexpSymbolTestCase(unittest.TestCase):
         self.assertEqual("pi", str(symbol))
         
 def suite():
-    suite = unittest.TestLoader().loadTestsFromTestCase(SexpSymbolTestCase)
-    return suite
+    return unittest.TestLoader().loadTestsFromTestCase(SexpSymbolTestCase)
 
 if __name__ == '__main__':
     tr = unittest.TextTestRunner(verbosity = 2)

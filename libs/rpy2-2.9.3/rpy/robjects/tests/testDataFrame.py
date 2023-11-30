@@ -89,7 +89,7 @@ class DataFrameTestCase(unittest.TestCase):
 
     def testIter_row(self):
         dataf = robjects.r('data.frame(a=1:2, b=I(c("a", "b")))')
-        rows = [x for x in dataf.iter_row()]
+        rows = list(dataf.iter_row())
         self.assertEqual(1, rows[0][0][0])
         self.assertEqual("b", rows[1][1][0])
 
@@ -127,8 +127,7 @@ class DataFrameTestCase(unittest.TestCase):
         self.assertEqual(2, len([x for x in dataf.colnames if x == 'a']))
 
 def suite():
-    suite = unittest.TestLoader().loadTestsFromTestCase(DataFrameTestCase)
-    return suite
+    return unittest.TestLoader().loadTestsFromTestCase(DataFrameTestCase)
 
 if __name__ == '__main__':
      unittest.main()

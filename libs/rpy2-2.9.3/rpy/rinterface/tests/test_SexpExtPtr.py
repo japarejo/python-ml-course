@@ -46,8 +46,7 @@ class SexpExtPtrTestCase(unittest.TestCase):
 
 
 def suite():
-    suite = unittest.TestLoader().loadTestsFromTestCase(SexpExtPtrTestCase)
-    return suite
+    return unittest.TestLoader().loadTestsFromTestCase(SexpExtPtrTestCase)
 
 if __name__ == '__main__':
     tr = unittest.TextTestRunner(verbosity = 2)

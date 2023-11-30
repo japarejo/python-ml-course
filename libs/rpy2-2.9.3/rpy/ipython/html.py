@@ -240,47 +240,52 @@ def html_vector_horizontal(vector,
                            table_class='rpy2_table'):
     if isinstance(vector, vectors.FactorVector):
         vector = StrFactorVector(vector)
-    html = template_vector_horizontal.render({
-        'table_class': table_class,
-        'clsname': type(vector).__name__,
-        'vector': vector,
-        'display_ncolmax': min(display_ncolmax, len(vector)),
-        'size_tail': size_tail,
-        'elt_i_tail': range(max(0, len(vector)-size_tail), len(vector))})
-    return html
+    return template_vector_horizontal.render(
+        {
+            'table_class': table_class,
+            'clsname': type(vector).__name__,
+            'vector': vector,
+            'display_ncolmax': min(display_ncolmax, len(vector)),
+            'size_tail': size_tail,
+            'elt_i_tail': range(max(0, len(vector) - size_tail), len(vector)),
+        }
+    )
 
 def html_rlist(vector,
                display_nrowmax=10,
                size_tail=2,
                table_class='rpy2_table'):
-    html = template_vector_vertical.render({
-        'table_class': table_class,
-        'clsname': type(vector).__name__,
-        'vector': vector,
-        'has_vector_names': vector.names is not rinterface.NULL,
-        'display_nrowmax': min(display_nrowmax, len(vector)),
-        'size_tail': size_tail,
-        'elt_i_tail': range(max(0, len(vector)-size_tail), len(vector))})
-    return html
+    return template_vector_vertical.render(
+        {
+            'table_class': table_class,
+            'clsname': type(vector).__name__,
+            'vector': vector,
+            'has_vector_names': vector.names is not rinterface.NULL,
+            'display_nrowmax': min(display_nrowmax, len(vector)),
+            'size_tail': size_tail,
+            'elt_i_tail': range(max(0, len(vector) - size_tail), len(vector)),
+        }
+    )
 
 def html_rdataframe(dataf,
                     display_nrowmax=10,
                     display_ncolmax=6,
                     size_coltail=2, size_rowtail=2,
                     table_class='rpy2_table'):
-    html = template_dataframe.render(
-        {'dataf': StrDataFrame(dataf),
-         'table_class': table_class,
-         'has_rownames': dataf.rownames is not None,
-         'clsname': type(dataf).__name__,
-         'display_nrowmax': min(display_nrowmax, dataf.nrow),
-         'display_ncolmax': min(display_ncolmax, dataf.ncol),
-         'col_i_tail': range(max(0, dataf.ncol-size_coltail), dataf.ncol),
-         'row_i_tail': range(max(0, dataf.nrow-size_rowtail), dataf.nrow),
-         'size_coltail': size_coltail,
-         'size_rowtail': size_rowtail
-     })
-    return html
+    return template_dataframe.render(
+        {
+            'dataf': StrDataFrame(dataf),
+            'table_class': table_class,
+            'has_rownames': dataf.rownames is not None,
+            'clsname': type(dataf).__name__,
+            'display_nrowmax': min(display_nrowmax, dataf.nrow),
+            'display_ncolmax': min(display_ncolmax, dataf.ncol),
+            'col_i_tail': range(max(0, dataf.ncol - size_coltail), dataf.ncol),
+            'row_i_tail': range(max(0, dataf.nrow - size_rowtail), dataf.nrow),
+            'size_coltail': size_coltail,
+            'size_rowtail': size_rowtail,
+        }
+    )
 
 def html_sourcecode(sourcecode):
     from pygments import highlight
@@ -290,8 +295,7 @@ def html_sourcecode(sourcecode):
     htmlcode = highlight(sourcecode, SLexer(), formatter)
     d = {'sourcecode': htmlcode,
          'syntax_highlighting': formatter.get_style_defs()}
-    html = template_sourcecode.render(d)
-    return html
+    return template_sourcecode.render(d)
 
 # FIXME: wherefrom() is taken from the rpy2 documentation
 # May be it should become part of the rpy2 API
@@ -307,10 +311,7 @@ def wherefrom(name, startenv=rinterface.globalenv):
             retry = False
         except LookupError:
             env = env.enclos()
-            if env.rsame(rinterface.emptyenv):
-                retry = False
-            else:
-                retry = True
+            retry = not env.rsame(rinterface.emptyenv)
     return env
 
 def _dict_ridentifiedobject(obj):
@@ -322,21 +323,16 @@ def _dict_ridentifiedobject(obj):
             origin = 'package:base ?'
     else:
         origin = '???'
-    d = {'clsname': type(obj).__name__,
-         'origin': origin,
-         'obj': obj}
-    return d
+    return {'clsname': type(obj).__name__, 'origin': origin, 'obj': obj}
 
 def html_ridentifiedobject(obj):
     d = _dict_ridentifiedobject(obj)
-    html = template_ridentifiedobject.render(d)
-    return html
+    return template_ridentifiedobject.render(d)
 
 def html_rs4(obj, table_class='rpy2_table'):
     d = _dict_ridentifiedobject(obj)
     d['table_class']=table_class
-    html = template_rs4.render(d)
-    return html
+    return template_rs4.render(d)
 
 def init_printing():
     ip = get_ipython()

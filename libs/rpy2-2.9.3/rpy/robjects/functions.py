@@ -39,10 +39,7 @@ class DocstringProperty(object):
         self.fget = fget
         self.class_doc = class_doc
     def __get__(self, obj, objtype=None):
-        if obj is None:
-            return self.class_doc
-        else:
-            return self.fget(obj)
+        return self.class_doc if obj is None else self.fget(obj)
     def __set__(self, obj, value):
         raise AttributeError("Cannot set the attribute")
     def __delete__(self, obj):
@@ -63,7 +60,7 @@ def _repr_argval(obj):
             else:
                 s = str(obj[0][0])
         elif l > 1:
-            s = '(%s, ...)' % str(obj[0][0])
+            s = f'({str(obj[0][0])}, ...)'
         else:
             s = str(obj)
     except:
@@ -87,22 +84,19 @@ class Function(RObjectMixin, rinterface.SexpClosure):
     @docstring_property(__doc__)
     def __doc__(self):
         fm = _formals_fixed(self)
-        doc = list(['Python representation of an R function.',
-                    'R arguments:', ''])
+        doc = ['Python representation of an R function.', 'R arguments:', '']
         if fm is rinterface.NULL:
             doc.append('<No information available>')
         for key, val in zip(fm.do_slot('names'), fm):
             if key == '...':
                 val = 'R ellipsis (any number of parameters)'
-            doc.append('%s: %s' % (key, _repr_argval(val)))
+            doc.append(f'{key}: {_repr_argval(val)}')
         return os.linesep.join(doc)
 
 
     def __call__(self, *args, **kwargs):
         new_args = [conversion.py2ri(a) for a in args]
-        new_kwargs = {}
-        for k, v in kwargs.items():
-            new_kwargs[k] = conversion.py2ri(v)
+        new_kwargs = {k: conversion.py2ri(v) for k, v in kwargs.items()}
         res = super(Function, self).__call__(*new_args, **new_kwargs)
         res = conversion.ri2ro(res)
         return res
@@ -117,12 +111,7 @@ class Function(RObjectMixin, rinterface.SexpClosure):
 
     def rcall(self, *args):
         """ Wrapper around the parent method rpy2.rinterface.SexpClosure.rcall(). """
-        res = super(Function, self).rcall(*args)
-        # XXX: Now that ri2ro converts to python objects, we restrict to the
-        # default now for a raw R call. I'm not sure there should be *any*
-        # conversion. However, we need to get this out of __init__.py first!
-        # res = ro.default_ri2ro(res)
-        return res
+        return super(Function, self).rcall(*args)
 
 class SignatureTranslatedFunction(Function):
     """ Python representation of an R function, where
@@ -191,24 +180,22 @@ class DocumentedSTFunction(SignatureTranslatedFunction):
 
     @docstring_property(__doc__)
     def __doc__(self):
-        doc = ['Python representation of an R function.']
         description = help.docstring(self.__rpackagename__,
                                      self.__rname__,
                                      sections=['description'])
-        doc.append(description)
-
+        doc = ['Python representation of an R function.', description]
         fm = _formals_fixed(self)
         names = fm.do_slot('names')
-        doc.append(self.__rname__+'(')
+        doc.append(f'{self.__rname__}(')
         for key, val in self._prm_translate.items():
             if key == '___':
                 description = '(was "..."). R ellipsis (any number of parameters)'
             else:
                 description = _repr_argval(fm[names.index(val)])
             if description is None:
-                doc.append('    %s,' % key)                
+                doc.append(f'    {key},')
             else:
-                doc.append('    %s = %s,' % (key, description))
+                doc.append(f'    {key} = {description},')
         doc.extend((')', ''))
         package = help.Package(self.__rpackagename__)
         page = package.fetch(self.__rname__)
@@ -218,6 +205,5 @@ class DocumentedSTFunction(SignatureTranslatedFunction):
             description, count = pattern_link.subn(r'\1', description)
             description, count = pattern_code.subn(r'`\1`', description)
             description, count = pattern_samp.subn(r'`\1`', description)
-            doc.append(' '.join((item.name, ': ', description, ',')))
-            doc.append('')
+            doc.extend((' '.join((item.name, ': ', description, ',')), ''))
         return os.linesep.join(doc)

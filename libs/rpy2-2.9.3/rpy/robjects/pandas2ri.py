@@ -71,22 +71,14 @@ def py2ri_pandasdataframe(obj):
 
 @py2ri.register(PandasIndex)
 def py2ri_pandasindex(obj):
-    if obj.dtype.kind == 'O':
-        return StrVector(obj)
-    else:
-        # pandas2ri should definitely not have to know which paths remain to be
-        # converted by numpy2ri
-        # Answer: the thing is that pandas2ri builds on the conversion
-        # rules defined by numpy2ri - deferring to numpy2ri is allowing
-        # us to reuse that code.
-        return numpy2ri.numpy2ri(obj)
+    return StrVector(obj) if obj.dtype.kind == 'O' else numpy2ri.numpy2ri(obj)
 
 
 def py2ri_categoryseries(obj):
     for c in obj.cat.categories:
         if not isinstance(c, str):
             raise ValueError('Converting pandas "Category" series to R factor is only possible when categories are strings.')
-    res = IntSexpVector(list(x+1 for x in obj.cat.codes))
+    res = IntSexpVector([x+1 for x in obj.cat.codes])
     res.do_slot_assign('levels', StrSexpVector(obj.cat.categories))
     if obj.cat.ordered:
         res.rclass = StrSexpVector(('ordered', 'factor'))
@@ -97,7 +89,9 @@ def py2ri_categoryseries(obj):
 @py2ri.register(PandasSeries)
 def py2ri_pandasseries(obj):
     if numpy.dtype.name == 'O':
-        warnings.warn('Element "%s" is of dtype "O" and converted to R vector of strings.' % obj.name)
+        warnings.warn(
+            f'Element "{obj.name}" is of dtype "O" and converted to R vector of strings.'
+        )
         res = StrVector(obj)
     elif obj.dtype.name == 'category':
         res = py2ri_categoryseries(obj)
@@ -135,60 +129,47 @@ def py2ri_pandasseries(obj):
 
 @ri2py.register(SexpVector)
 def ri2py_vector(obj):
-    res = numpy2ri.ri2py(obj)
-    return res
+    return numpy2ri.ri2py(obj)
     
 @ri2py.register(IntSexpVector)
 def ri2py_intvector(obj):
-    # special case for factors
-    if 'factor' in obj.rclass:
-        res = pandas.Categorical.from_codes(numpy.asarray(obj) - 1,
-                                            categories = obj.do_slot('levels'),
-                                            ordered = 'ordered' in obj.rclass)
-    else:
-        res = numpy2ri.ri2py(obj)
-    return res
+    return (
+        pandas.Categorical.from_codes(
+            numpy.asarray(obj) - 1,
+            categories=obj.do_slot('levels'),
+            ordered='ordered' in obj.rclass,
+        )
+        if 'factor' in obj.rclass
+        else numpy2ri.ri2py(obj)
+    )
 
 
 def get_timezone():
     """ Return the system's timezone settings. """
-    if default_timezone:
-        timezone = default_timezone
-    else:
-        timezone = tzlocal.get_localzone()
-    return timezone
+    return default_timezone if default_timezone else tzlocal.get_localzone()
 
 
 @ri2py.register(FloatSexpVector)
 def ri2py_floatvector(obj):
-    # special case for POSIXct date objects
-    if 'POSIXct' in obj.rclass:
-        tzone_name = obj.do_slot('tzone')[0]
-        if tzone_name == '':
-            # R is implicitly using the local timezone, while Python time libraries
-            # will assume UTC.
-            tzone = get_timezone()
-        else:
-            tzone = pytz.timezone(tzone_name)
-        foo = (tzone.localize(datetime.fromtimestamp(x)) for x in obj)
-        res = pandas.to_datetime(tuple(foo))
-    else:
-        res = numpy2ri.ri2py(obj)
-    return res
+    if 'POSIXct' not in obj.rclass:
+        return numpy2ri.ri2py(obj)
+    tzone_name = obj.do_slot('tzone')[0]
+    tzone = get_timezone() if tzone_name == '' else pytz.timezone(tzone_name)
+    foo = (tzone.localize(datetime.fromtimestamp(x)) for x in obj)
+    return pandas.to_datetime(tuple(foo))
 
 @ri2py.register(ListSexpVector)
 def ri2py_listvector(obj):        
-    if 'data.frame' in obj.rclass:
-        res = ri2py(DataFrame(obj))
-    else:
-        res = numpy2ri.ri2py(obj)
-    return res
+    return (
+        ri2py(DataFrame(obj))
+        if 'data.frame' in obj.rclass
+        else numpy2ri.ri2py(obj)
+    )
 
 @ri2py.register(DataFrame)
 def ri2py_dataframe(obj):
     items = tuple((k, ri2py(v)) for k, v in obj.items())
-    res = PandasDataFrame.from_items(items)
-    return res
+    return PandasDataFrame.from_items(items)
 
 def activate():
     global original_converter

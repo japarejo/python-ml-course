@@ -76,7 +76,7 @@ def load_tests(loader, tests, pattern):
 
 if __name__ == "__main__":
     import sys, rpy2.rinterface
-    print("rpy2 version: %s" % rpy2.__version__)
+    print(f"rpy2 version: {rpy2.__version__}")
     print("- built against R version: %s" % '-'.join(str(x)
           for x in rpy2.rinterface.R_VERSION_BUILD))
 
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         sys.exit(1)
     try:
         rv = rpy2.rinterface.baseenv['R.version.string']
-        print("- running linked to R version: %s" % rv[0])
+        print(f"- running linked to R version: {rv[0]}")
     except KeyError as ke:
         print("The R version dynamically linked cannot be identified.")
 

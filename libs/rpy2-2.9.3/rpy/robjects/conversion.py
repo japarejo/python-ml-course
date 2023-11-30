@@ -49,7 +49,9 @@ def _ri2ro(obj):
     This function will convert rpy2.rinterface (ri) low-level objects
     into rpy2.robjects (ro) higher-level objects.
     """
-    raise NotImplementedError("Conversion 'ri2ro' not defined for objects of type '%s'" % str(type(obj)))
+    raise NotImplementedError(
+        f"Conversion 'ri2ro' not defined for objects of type '{str(type(obj))}'"
+    )
 
 def _py2ri(obj):
     """ Dummy function for py2ri.
@@ -57,7 +59,9 @@ def _py2ri(obj):
     This function will convert Python objects into rpy2.rinterface
     (ri) objects.
     """
-    raise NotImplementedError("Conversion 'py2ri' not defined for objects of type '%s'" % str(type(obj)))
+    raise NotImplementedError(
+        f"Conversion 'py2ri' not defined for objects of type '{str(type(obj))}'"
+    )
 
 def _py2ro(obj):
     """ Dummy function for py2ro.
@@ -65,14 +69,18 @@ def _py2ro(obj):
     This function will convert Python objects into rpy2.robjects
     (ro) objects.
     """
-    raise NotImplementedError("Conversion 'py2ro' not defined for objects of type '%s'" % str(type(obj)))
+    raise NotImplementedError(
+        f"Conversion 'py2ro' not defined for objects of type '{str(type(obj))}'"
+    )
 
 def _ri2py(obj):
     """ Dummy function for ri2py.
 
     This function will convert Python objects into Python (presumably non-rpy2) objects.
     """
-    raise NotImplementedError("Conversion 'ri2py' not defined for objects of type '%s'" % str(type(obj)))
+    raise NotImplementedError(
+        f"Conversion 'ri2py' not defined for objects of type '{str(type(obj))}'"
+    )
 
 
 class Converter(object):
@@ -111,7 +119,7 @@ class Converter(object):
 
     def __add__(self, converter):
         assert isinstance(converter, Converter)
-        new_name = '%s + %s' % (self.name, converter.name)
+        new_name = f'{self.name} + {converter.name}'
         # create a copy of `self` as the result converter
         result_converter = Converter(new_name, template=self)
         overlay_converter(converter, result_converter)

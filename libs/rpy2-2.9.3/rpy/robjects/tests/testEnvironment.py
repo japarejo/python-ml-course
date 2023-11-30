@@ -38,8 +38,7 @@ class EnvironmentTestCase(unittest.TestCase):
             self.assertEquals(it_a[1][0], it_b[1])
         
 def suite():
-    suite = unittest.TestLoader().loadTestsFromTestCase(EnvironmentTestCase)
-    return suite
+    return unittest.TestLoader().loadTestsFromTestCase(EnvironmentTestCase)
 
 if __name__ == '__main__':
      unittest.main()

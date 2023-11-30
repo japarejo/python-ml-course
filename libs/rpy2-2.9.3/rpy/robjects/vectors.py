@@ -59,12 +59,9 @@ class ExtractDelegator(object):
            - an index is itself a vector of elements to select
         """
 
-        conv_args = list(None for x in range(len(args)))
+        conv_args = [None for _ in range(len(args))]
         for i, x in enumerate(args):
-            if x is MissingArg:
-                conv_args[i] = x
-            else:
-                conv_args[i] = conversion.py2ri(x)
+            conv_args[i] = x if x is MissingArg else conversion.py2ri(x)
         kwargs = copy.copy(kwargs)
         for k, v in kwargs.values():
             kwargs[k] = conversion.py2ri(v)
@@ -215,12 +212,10 @@ class VectorOperationsDelegator(object):
     
     # 
     def __neg__(self):
-        res = globalenv_ri.get("-")(self._parent)
-        return res
+        return globalenv_ri.get("-")(self._parent)
 
     def __contains__(self, what):
-        res = globalenv_ri.get("%in%")(self._parent, what)
-        return res
+        return globalenv_ri.get("%in%")(self._parent, what)
 
 
 
@@ -326,23 +321,16 @@ class Vector(RObjectMixin, SexpVector):
         return res
 
     def repr_format_elt(self, elt, max_width = 12):        
-        max_width = int(max_width)
         if elt is NA_Real or elt is NA_Integer or elt is NA_Character or elt is NA_Logical:
-            res = repr(elt)
-        elif isinstance(elt, long) or isinstance(elt, int):
-            res = '%8i' %elt
+            return repr(elt)
+        elif isinstance(elt, (long, int)):
+            return '%8i' %elt
         elif isinstance(elt, float):
-            res = '%8f' %elt
+            return '%8f' %elt
         else:
-            if isinstance(elt, py3str):
-                elt = elt.__repr__()
-            else:
-                elt = type(elt).__name__    
-            if len(elt) < max_width:
-                res = elt
-            else:
-                res = "%s..." % (str(elt[ : (max_width - 3)]))
-        return res
+            elt = elt.__repr__() if isinstance(elt, py3str) else type(elt).__name__
+            max_width = int(max_width)
+            return elt if len(elt) < max_width else f"{str(elt[:max_width - 3])}..."
 
     def _iter_formatted(self, max_items=9):        
         format_elt = self.repr_format_elt
@@ -371,8 +359,7 @@ class Vector(RObjectMixin, SexpVector):
         d = {'elements': self._iter_formatted(),
              'classname': type(self).__name__,
              'nelements': len(self)}
-        html = self._html_template.render(d)
-        return html
+        return self._html_template.render(d)
 
 
 class StrVector(Vector, StrSexpVector):
@@ -543,14 +530,14 @@ class FactorVector(IntVector):
         self.rx2 = DoubleExtractDelegator(self)
 
     def repr_format_elt(self, elt, max_width = 8):
-        max_width = int(max_width)
         levels = self._levels(self)
         if elt is NA_Integer:
             res = repr(elt)
         else:
             res = levels[elt-1]
+            max_width = int(max_width)
             if len(res) >= max_width:
-                res = "%s..." % (res[ : (max_width - 3)])
+                res = f"{res[:max_width - 3]}..."
         return res
 
     def __levels_get(self):
@@ -644,8 +631,7 @@ The parameter 'itemable' can be:
 
     def _iter_repr(self, max_items=9):
         if len(self) <= max_items:
-            for elt in self:
-                yield elt
+            yield from self
         else:
             half_items = max_items // 2
             for i in range(0, half_items):
@@ -666,17 +652,14 @@ The parameter 'itemable' can be:
                     name = self.names[i]
                 except TypeError as te:
                     name = '<no name>'
-                res.append("  %s: %s%s  %s" %(name,
-                                              type(elt),
-                                              os.linesep,
-                                              elt.__repr__()))
+                res.append(f"  {name}: {type(elt)}{os.linesep}  {elt.__repr__()}")
 
-        res = super(ListVector, self).__repr__() + os.linesep + \
-            os.linesep.join(res)
-        return res
+        return (
+            super(ListVector, self).__repr__() + os.linesep + os.linesep.join(res)
+        )
 
     def _repr_html_(self, max_items=7):
-        elements = list()
+        elements = []
         for e in self._iter_repr(max_items=max_items):
             if hasattr(e, '_repr_html_'):
                 elements.append(e._repr_html_())
@@ -684,7 +667,7 @@ The parameter 'itemable' can be:
                 elements.append(e)
 
 
-        names = list()
+        names = []
         if len(self) <= max_items:
             names.extend(self.names)
         else:
@@ -702,12 +685,11 @@ The parameter 'itemable' can be:
                 except TypeError:
                     name = '[no name]'
                 names.append(name)
-        
+
         d = {'names_elements': zip(names, elements),
              'nelements': len(self),
              'classname': type(self).__name__}
-        html = self._html_template.render(d)
-        return html
+        return self._html_template.render(d)
 
     
     @staticmethod
@@ -816,8 +798,7 @@ class POSIXct(POSIXt, FloatVector):
         # time should look into this.
 
         d = isodatetime_columns(seq)
-        sexp = POSIXct._ISOdatetime(*d, tz = StrSexpVector((tz_info, )))
-        return sexp
+        return POSIXct._ISOdatetime(*d, tz = StrSexpVector((tz_info, )))
 
 
     @staticmethod
@@ -926,18 +907,17 @@ class Matrix(Array):
         res = self._rownames(self)
         return conversion.ri2ro(res)
     def __rownames_set(self, rn):
-        if isinstance(rn, StrSexpVector):
-            if len(rn) != self.nrow:
-                raise ValueError('Invalid length.')
-            if self.dimnames is NULL:
-                dn = ListVector.from_length(2)
-                dn[0] = rn
-                self.do_slot_assign('dimnames', dn)
-            else:
-                dn = self.dimnames
-                dn[0] = rn
-        else:
+        if not isinstance(rn, StrSexpVector):
             raise ValueError('The rownames attribute can only be an R string vector.')
+        if len(rn) != self.nrow:
+            raise ValueError('Invalid length.')
+        if self.dimnames is NULL:
+            dn = ListVector.from_length(2)
+            dn[0] = rn
+            self.do_slot_assign('dimnames', dn)
+        else:
+            dn = self.dimnames
+            dn[0] = rn
     rownames = property(__rownames_get, __rownames_set, None, "Row names")
 
             
@@ -950,18 +930,17 @@ class Matrix(Array):
         res = self._colnames(self)
         return conversion.ri2ro(res)
     def __colnames_set(self, cn):
-        if isinstance(cn, StrSexpVector):
-            if len(cn) != self.ncol:
-                raise ValueError('Invalid length.')
-            if self.dimnames is NULL:
-                dn = ListVector.from_length(2)
-                dn[1] = cn
-                self.do_slot_assign('dimnames', dn)
-            else:
-                dn = self.dimnames
-                dn[1] = cn
-        else:
+        if not isinstance(cn, StrSexpVector):
             raise ValueError('The colnames attribute can only be an R string vector.')
+        if len(cn) != self.ncol:
+            raise ValueError('Invalid length.')
+        if self.dimnames is NULL:
+            dn = ListVector.from_length(2)
+            dn[1] = cn
+            self.do_slot_assign('dimnames', dn)
+        else:
+            dn = self.dimnames
+            dn[1] = cn
     colnames = property(__colnames_get, __colnames_set, None, "Column names")
         
     def transpose(self):
@@ -1048,19 +1027,21 @@ class DataFrame(ListVector):
         """
         if isinstance(obj, rinterface.SexpVector):
             if obj.typeof != rinterface.VECSXP:
-                raise ValueError("obj should of typeof VECSXP"+\
-                                     " (and we get %s)" % rinterface.str_typeint(obj.typeof))
-            if self._is_list(obj)[0] or \
-                    globalenv_ri.get('inherits')(obj, self._dataframe_name)[0]:
-                #FIXME: is it really a good idea to pass R lists
-                # to the constructor ?
-                super(DataFrame, self).__init__(obj)
-                return
-            else:
                 raise ValueError(
-            "When passing R objects to build a DataFrame," +\
-                " the R object must be a list or inherit from" +\
-                " the R class 'data.frame'")
+                    f"obj should of typeof VECSXP (and we get {rinterface.str_typeint(obj.typeof)})"
+                )
+            if (
+                not self._is_list(obj)[0]
+                and not globalenv_ri.get('inherits')(obj, self._dataframe_name)[0]
+            ):
+                    raise ValueError(
+                "When passing R objects to build a DataFrame," +\
+                        " the R object must be a list or inherit from" +\
+                        " the R class 'data.frame'")
+            #FIXME: is it really a good idea to pass R lists
+            # to the constructor ?
+            super(DataFrame, self).__init__(obj)
+            return
         elif isinstance(obj, rlc.TaggedList):
             kv = [(k, conversion.py2ri(v)) for k,v in obj.items()]
         else:
@@ -1087,7 +1068,7 @@ class DataFrame(ListVector):
         super(DataFrame, self).__init__(df)
 
     def _repr_html_(self, max_items=7):
-        names = list()
+        names = []
         if len(self) <= max_items:
             names.extend(self.names)
         else:
@@ -1106,21 +1087,20 @@ class DataFrame(ListVector):
                     name = '[no name]'
                 names.append(name)
 
-        elements = list()
+        elements = []
         for e in self._iter_repr(max_items=max_items):
             if hasattr(e, '_repr_html_'):
                 elements.append(tuple(e._iter_formatted()))
             else:
                 elements.append(['...',] * len(elements[-1]))
-       
+
         d = {'column_names': names,
              'rows': tuple(range(len(elements))),
              'columns': tuple(range(len(names))),
              'nrows': self.nrow,
              'ncolumns': self.ncol,
              'elements': elements}
-        html = self._html_template.render(d)
-        return html
+        return self._html_template.render(d)
 
     def _get_nrow(self):
         """ Number of rows. 
@@ -1259,11 +1239,21 @@ class DataFrame(ListVector):
         row_names = conversion.py2ro(row_names)
         col_names = conversion.py2ro(col_names)
         qmethod = conversion.py2ro(qmethod)
-        res = self._write_table(self, **{'file': path, 'quote': quote, 'sep': sep, 
-                                         'eol': eol, 'na': na, 'dec': dec,
-                                         'row.names': row_names, 
-                                         'col.names': col_names, 'qmethod': qmethod, 'append': append})
-        return res
+        return self._write_table(
+            self,
+            **{
+                'file': path,
+                'quote': quote,
+                'sep': sep,
+                'eol': eol,
+                'na': na,
+                'dec': dec,
+                'row.names': row_names,
+                'col.names': col_names,
+                'qmethod': qmethod,
+                'append': append,
+            }
+        )
     
     def iter_row(self):
         """ iterator across rows """

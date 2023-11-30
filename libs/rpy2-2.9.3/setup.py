@@ -77,29 +77,31 @@ def _get_r_home(r_bin = "R"):
         r_home = subprocess.check_output((r_bin, "RHOME"),
                                          universal_newlines=True)
     except:
-        msg = "Error: Tried to guess R's HOME but no command '%s' in the PATH." % r_bin
+        msg = f"Error: Tried to guess R's HOME but no command '{r_bin}' in the PATH."
         print(msg)
         sys.exit(1)
-        # try:
-        #     r_src = _download_r()
-        #     print(r_src)
-        #     r_src_dir = _build_r(r_src)
-        #     #_install_r(r_src_dir)
-        # except:
-        #     print("Unable to download R source.")
-        #     sys.exit(1)
+            # try:
+            #     r_src = _download_r()
+            #     print(r_src)
+            #     r_src_dir = _build_r(r_src)
+            #     #_install_r(r_src_dir)
+            # except:
+            #     print("Unable to download R source.")
+            #     sys.exit(1)
 
     r_home = r_home.split(os.linesep)
 
     #Twist if 'R RHOME' spits out a warning
     if r_home[0].startswith("WARNING"):
-        warnings.warn("R emitting a warning: %s" % r_home[0])
+        warnings.warn(f"R emitting a warning: {r_home[0]}")
         r_home = r_home[1].rstrip()
     else:
         r_home = r_home[0].rstrip()
 
     if os.path.exists(os.path.join(r_home, 'Renviron.site')):
-        warnings.warn("The optional file '%s' is defined. Modifying it between build time and run time may lead to issues when using rpy2." % os.path.join(r_home, 'Renviron.site'))
+        warnings.warn(
+            f"The optional file '{os.path.join(r_home, 'Renviron.site')}' is defined. Modifying it between build time and run time may lead to issues when using rpy2."
+        )
 
     return r_home
 
@@ -168,9 +170,7 @@ def cmp_version(x, y):
     if (x[0] > y[0]):
         return 1
     if (x[0] == y[0]):
-        if len(x) == 1 or len(y) == 1:
-            return 0
-        return cmp_version(x[1:], y[1:])
+        return 0 if len(x) == 1 or len(y) == 1 else cmp_version(x[1:], y[1:])
 
 class RExec(object):
     """ Compilation-related configuration parameters used by R. """
@@ -198,12 +198,14 @@ class RExec(object):
         rversion = next(output)
         #Twist if 'R --version' spits out a warning
         if rversion.startswith("WARNING"):
-            warnings.warn("R emitting a warning: %s" % rversion)
+            warnings.warn(f"R emitting a warning: {rversion}")
             rversion = next(output)
         print(rversion)
         m = re.match('^R ([^ ]+) ([^ ]+) .+$', rversion)
         if m is None:
-            warnings.warn("Unable to extract R's version number from the string: '%s'" % rversion)
+            warnings.warn(
+                f"Unable to extract R's version number from the string: '{rversion}'"
+            )
             # return dummy version 0.0
             rversion = [0, 0]
         else:
@@ -223,7 +225,7 @@ class RExec(object):
         output = output.split(os.linesep)
         #Twist if 'R RHOME' spits out a warning
         if output[0].startswith("WARNING"):
-            warnings.warn("R emitting a warning: %s" % output[0])
+            warnings.warn(f"R emitting a warning: {output[0]}")
             output = output[1:]
         return output
 
@@ -248,18 +250,17 @@ def getRinterface_ext():
             # See http://bugs.python.org/issue4709
             define_macros.append(('MS_WIN64', 1))
     else:
-        define_macros.append(('R_INTERFACE_PTRS', 1))
-        define_macros.append(('HAVE_POSIX_SIGJMP', 1))
-        define_macros.append(('RIF_HAS_RSIGHAND', 1))
-        define_macros.append(('CSTACK_DEFNS', 1))
-        define_macros.append(('HAS_READLINE', 1))
-
-
+        define_macros.extend(
+            (
+                ('R_INTERFACE_PTRS', 1),
+                ('HAVE_POSIX_SIGJMP', 1),
+                ('RIF_HAS_RSIGHAND', 1),
+                ('CSTACK_DEFNS', 1),
+                ('HAS_READLINE', 1),
+            )
+        )
     if sys.byteorder == 'big':
         define_macros.append(('RPY_BIGENDIAN', 1))
-    else:
-        pass
-
     r_home = _get_r_home()
     rexec = RExec(r_home)
     if rexec.version[0] == 'development' or \
@@ -297,7 +298,7 @@ def getRinterface_ext():
         library_dirs.extend(args.L)
         libraries.extend(args.l)
     extra_link_args.extend(unknown)
-    
+
     print("""
     Compilation parameters for rpy2's C components:
         include_dirs    = %s
@@ -308,52 +309,49 @@ def getRinterface_ext():
            str(library_dirs), 
            str(libraries), 
            str(extra_link_args)))
-    
+
     rinterface_ext = Extension(
-            name = pack_name + '.rinterface._rinterface',
-            sources = [os.path.join(package_prefix,
-                                    'rpy', 'rinterface', '_rinterface.c')
-                       ],
-            depends = [os.path.join(package_prefix,
-                                    'rpy', 'rinterface', 'embeddedr.h'), 
-                       os.path.join(package_prefix,
-                                    'rpy', 'rinterface', 'r_utils.h'),
-                       os.path.join(package_prefix,
-                                    'rpy', 'rinterface', 'buffer.h'),
-                       os.path.join(package_prefix,
-                                    'rpy', 'rinterface', 'sequence.h'),
-                       os.path.join(package_prefix,
-                                    'rpy', 'rinterface', 'sexp.h'),
-                       os.path.join(package_prefix,
-                                    'rpy', 'rinterface', '_rinterface.h'),
-                       os.path.join(package_prefix,
-                                    'rpy', 'rinterface', 'rpy_device.h')
-                       ],
-            include_dirs = [os.path.join(package_prefix,
-                                         'rpy', 'rinterface'),] + include_dirs,
-            libraries = libraries,
-            library_dirs = library_dirs,
-            define_macros = define_macros,
-            runtime_library_dirs = library_dirs,
-            extra_compile_args=extra_compile_args,
-            extra_link_args = extra_link_args
-            )
+        name=f'{pack_name}.rinterface._rinterface',
+        sources=[
+            os.path.join(package_prefix, 'rpy', 'rinterface', '_rinterface.c')
+        ],
+        depends=[
+            os.path.join(package_prefix, 'rpy', 'rinterface', 'embeddedr.h'),
+            os.path.join(package_prefix, 'rpy', 'rinterface', 'r_utils.h'),
+            os.path.join(package_prefix, 'rpy', 'rinterface', 'buffer.h'),
+            os.path.join(package_prefix, 'rpy', 'rinterface', 'sequence.h'),
+            os.path.join(package_prefix, 'rpy', 'rinterface', 'sexp.h'),
+            os.path.join(package_prefix, 'rpy', 'rinterface', '_rinterface.h'),
+            os.path.join(package_prefix, 'rpy', 'rinterface', 'rpy_device.h'),
+        ],
+        include_dirs=[
+            os.path.join(package_prefix, 'rpy', 'rinterface'),
+        ]
+        + include_dirs,
+        libraries=libraries,
+        library_dirs=library_dirs,
+        define_macros=define_macros,
+        runtime_library_dirs=library_dirs,
+        extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args,
+    )
 
     rpy_device_ext = Extension(
-        pack_name + '.rinterface._rpy_device',
+        f'{pack_name}.rinterface._rpy_device',
         [
-            os.path.join(package_prefix,
-                         'rpy', 'rinterface', '_rpy_device.c'),
-            ],
-        include_dirs = include_dirs + 
-        [os.path.join('rpy', 'rinterface'), ],
-        libraries = libraries,
-        library_dirs = library_dirs,
-        define_macros = define_macros,
-        runtime_library_dirs = library_dirs,
+            os.path.join(package_prefix, 'rpy', 'rinterface', '_rpy_device.c'),
+        ],
+        include_dirs=include_dirs
+        + [
+            os.path.join('rpy', 'rinterface'),
+        ],
+        libraries=libraries,
+        library_dirs=library_dirs,
+        define_macros=define_macros,
+        runtime_library_dirs=library_dirs,
         extra_compile_args=extra_compile_args,
-        extra_link_args = extra_link_args
-        )
+        extra_link_args=extra_link_args,
+    )
 
     return [rinterface_ext, rpy_device_ext]
 
@@ -383,59 +381,72 @@ if __name__ == '__main__':
     if sys.version_info[0] == 2 and sys.version_info[1] < 7:
         print("rpy2 requires at least Python Version 2.7 (with Python 3.5 or later recommended).")
         sys.exit(1)
-        
+
     requires=['six', 'jinja2']
     if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 4):
         requires.append('singledispatch')
 
     # additional C library included in rpy2
-    libraries = list()
-    libraries.append(('r_utils',
-                      dict(sources = [os.path.join(package_prefix,
-                                                   'rpy', 'rinterface',
-                                                   'r_utils.c')],
-                           include_dirs = ri_ext[0].include_dirs,
-                           language = 'c')))
-    
-    setup(
-        cmdclass = {'build_ext': build_ext},
-        name = pack_name,
-        version = pack_version,
-        description = "Python interface to the R language (embedded R)",
-        long_description = LONG_DESCRIPTION,
-        url = "https://rpy2.bitbucket.io",
-        license = "GPLv2+",
-        author = "Laurent Gautier",
-        author_email = "lgautier@gmail.com",
-        requires = requires,
-        install_requires = requires,
-        ext_modules = rinterface_exts,
-        libraries = libraries,
-        package_dir = pack_dir,
-        packages = [pack_name,
-                    pack_name + '.rlike',
-                    pack_name + '.rlike.tests',
-                    pack_name + '.rinterface',
-                    pack_name + '.rinterface.tests',
-                    pack_name + '.robjects',
-                    pack_name + '.robjects.tests',
-                    pack_name + '.robjects.lib',
-                    pack_name + '.robjects.lib.tests',
-                    pack_name + '.interactive',
-                    pack_name + '.interactive.tests',
-                    pack_name + '.ipython',
-                    pack_name + '.ipython.tests'
-                    ],
-        classifiers = ['Programming Language :: Python',
-                       'Programming Language :: Python :: 3',
-                       'Programming Language :: Python :: 3.5',
-                       'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)',
-                       'Intended Audience :: Developers',
-                       'Intended Audience :: Science/Research',
-                       'Development Status :: 5 - Production/Stable'
-                       ],
-        package_data = {
-            'rpy2': ['images/*.png', ],
-            'rpy2': ['doc/source/rpy2_logo.png', ]}
+    libraries = [
+        (
+            'r_utils',
+            dict(
+                sources=[
+                    os.path.join(
+                        package_prefix, 'rpy', 'rinterface', 'r_utils.c'
+                    )
+                ],
+                include_dirs=ri_ext[0].include_dirs,
+                language='c',
+            ),
         )
+    ]
+    setup(
+        cmdclass={'build_ext': build_ext},
+        name=pack_name,
+        version=pack_version,
+        description="Python interface to the R language (embedded R)",
+        long_description=LONG_DESCRIPTION,
+        url="https://rpy2.bitbucket.io",
+        license="GPLv2+",
+        author="Laurent Gautier",
+        author_email="lgautier@gmail.com",
+        requires=requires,
+        install_requires=requires,
+        ext_modules=rinterface_exts,
+        libraries=libraries,
+        package_dir=pack_dir,
+        packages=[
+            pack_name,
+            f'{pack_name}.rlike',
+            f'{pack_name}.rlike.tests',
+            f'{pack_name}.rinterface',
+            f'{pack_name}.rinterface.tests',
+            f'{pack_name}.robjects',
+            f'{pack_name}.robjects.tests',
+            f'{pack_name}.robjects.lib',
+            f'{pack_name}.robjects.lib.tests',
+            f'{pack_name}.interactive',
+            f'{pack_name}.interactive.tests',
+            f'{pack_name}.ipython',
+            f'{pack_name}.ipython.tests',
+        ],
+        classifiers=[
+            'Programming Language :: Python',
+            'Programming Language :: Python :: 3',
+            'Programming Language :: Python :: 3.5',
+            'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)',
+            'Intended Audience :: Developers',
+            'Intended Audience :: Science/Research',
+            'Development Status :: 5 - Production/Stable',
+        ],
+        package_data={
+            'rpy2': [
+                'images/*.png',
+            ],
+            'rpy2': [
+                'doc/source/rpy2_logo.png',
+            ],
+        },
+    )
 

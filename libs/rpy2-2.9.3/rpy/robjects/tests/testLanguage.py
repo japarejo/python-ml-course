@@ -42,8 +42,7 @@ y <- (x+1) / 2
         self.assertEqual(2, env['y'][0])
 
 def suite():
-    suite = unittest.TestLoader().loadTestsFromTestCase(LanguageTestCase)
-    return suite
+    return unittest.TestLoader().loadTestsFromTestCase(LanguageTestCase)
 
 if __name__ == '__main__':
      unittest.main()

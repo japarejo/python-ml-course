@@ -75,8 +75,7 @@ class SignatureTranslatedFunctionTestCase(unittest.TestCase):
         s = ro_f(ro_v)
 
 def suite():
-    suite = unittest.TestLoader().loadTestsFromTestCase(FunctionTestCase)
-    return suite
+    return unittest.TestLoader().loadTestsFromTestCase(FunctionTestCase)
 
 if __name__ == '__main__':
      unittest.main()

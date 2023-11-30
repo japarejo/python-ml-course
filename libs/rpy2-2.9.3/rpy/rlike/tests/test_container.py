@@ -235,8 +235,8 @@ class TaggedListTestCase(unittest.TestCase):
         self.assertEqual((1, 2, 3), tuple(tl))
 
         tl = rlc.TaggedList.from_items({'a':1, 'b':2, 'c':3})
-        self.assertEqual(set(('a', 'b', 'c')), set(tl.tags))
-        self.assertEqual(set((1, 2, 3)), set(tuple(tl)))
+        self.assertEqual({'a', 'b', 'c'}, set(tl.tags))
+        self.assertEqual({1, 2, 3}, set(tuple(tl)))
         
 def suite():
     suite = unittest.TestLoader().loadTestsFromTestCase(OrdDictTestCase)

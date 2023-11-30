@@ -110,8 +110,10 @@ result = rmagic_addone(12344)
         #                          buffer(b).buffer_info())
 
         # numpy recarray (numpy's version of a data frame)
-        dataf_np= np.array([(1, 2.9, 'a'), (2, 3.5, 'b'), (3, 2.1, 'c')],
-                           dtype=[('x', '<i4'), ('y', '<f8'), ('z', '|%s1' % np_string_type)])
+        dataf_np = np.array(
+            [(1, 2.9, 'a'), (2, 3.5, 'b'), (3, 2.1, 'c')],
+            dtype=[('x', '<i4'), ('y', '<f8'), ('z', f'|{np_string_type}1')],
+        )
         # store it in the notebook's user namespace
         self.ip.user_ns['dataf_np'] = dataf_np
         # equivalent to:
@@ -145,7 +147,7 @@ result = rmagic_addone(12344)
         # fromr_dataf_np['x'].values[0] = 11
         # self.assertEqual(11, fromr_dataf_np_again['x'][0])
         # fromr_dataf_np['x'].values[0] = 1
-        
+
         # retrieve `dataf_np` from R into `fromr_dataf_np` in the notebook. 
         self.ip.run_cell_magic('R',
                                '-o dataf_np',
@@ -259,7 +261,7 @@ result = rmagic_addone(12344)
             self.ip.run_line_magic('Rdevice', 'svg')
             self.ip.run_cell_magic('R', line, cell)
 
-        png_args = ['--units=in --res=1 ' + s for s in basic_args]
+        png_args = [f'--units=in --res=1 {s}' for s in basic_args]
         for line in png_args:
             self.ip.run_line_magic('Rdevice', 'png')
             self.ip.run_cell_magic('R', line, cell)

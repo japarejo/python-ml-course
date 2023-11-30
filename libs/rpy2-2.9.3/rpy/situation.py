@@ -7,7 +7,7 @@ R version, rpy2 version, etc...).
 import sys, os, subprocess
 
 def assert_python_version():
-    if not (sys.version_info[0] >= 3 and sys.version_info[1] >= 3):
+    if sys.version_info[0] < 3 or sys.version_info[1] < 3:
         raise RuntimeError(
             "Python >=3.3 is required to run rpy2")
 
@@ -31,10 +31,7 @@ def r_home_from_subprocess():
     except Exception as exc:  # FileNotFoundError, WindowsError, etc
         return
     r_home = tmp.split(os.linesep)
-    if r_home[0].startswith("WARNING"):
-        r_home = r_home[1]
-    else:
-        r_home = r_home[0].strip()
+    r_home = r_home[1] if r_home[0].startswith("WARNING") else r_home[0].strip()
     return r_home
 
 
@@ -72,22 +69,22 @@ def iter_info():
 
     yield _make_bold('Python version:')
     yield sys.version
-    if not (sys.version_info[0] == 3 and sys.version_info[1] >= 5):
+    if sys.version_info[0] != 3 or sys.version_info[1] < 5:
         yield "*** rpy2 is primarily designed for Python >= 3.5" 
-    
+
     yield _make_bold("Looking for R's HOME:")
 
     r_home = os.environ.get("R_HOME")
-    yield "    Environment variable R_HOME: %s" % r_home
-    
+    yield f"    Environment variable R_HOME: {r_home}"
+
     r_home = r_home_from_subprocess()
-    yield "    Calling `R RHOME`: %s" % r_home
-    
+    yield f"    Calling `R RHOME`: {r_home}"
+
     if sys.platform == 'win32':
         r_home = r_home_from_registry()
     else:
         r_home = '*** Only available on Windows ***'
-    yield "    InstallPath in the registry: %s" % r_home
+    yield f"    InstallPath in the registry: {r_home}"
 
     try:
         import rpy2.rinterface._rinterface
@@ -97,8 +94,8 @@ def iter_info():
         r_version_build = '*** Error while importing rpy2.rinterface ***'
 
     yield _make_bold("R version:")
-    yield "    In the PATH: %s" % r_version_from_subprocess()
-    yield "    Used to build rpy2: %s" % r_version_build
+    yield f"    In the PATH: {r_version_from_subprocess()}"
+    yield f"    Used to build rpy2: {r_version_build}"
 
     r_libs = os.environ.get("R_LIBS")
     yield _make_bold("Additional directories to load R packages from:")

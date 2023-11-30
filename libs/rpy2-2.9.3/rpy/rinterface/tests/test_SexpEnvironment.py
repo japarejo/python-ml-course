@@ -116,7 +116,7 @@ class SexpEnvironmentTestCase(unittest.TestCase):
         env = newEnv()
         env["a"] = rinterface.SexpVector([123, ], rinterface.INTSXP)
         env["b"] = rinterface.SexpVector([456, ], rinterface.INTSXP)
-        symbols = [x for x in env]
+        symbols = list(env)
         self.assertEqual(2, len(symbols))
         for s in ["a", "b"]:
             self.assertTrue(s in symbols)
@@ -147,8 +147,7 @@ class SexpEnvironmentTestCase(unittest.TestCase):
         self.assertRaises(ValueError, rinterface.baseenv.__delitem__, 'letters')
 
 def suite():
-    suite = unittest.TestLoader().loadTestsFromTestCase(SexpEnvironmentTestCase)
-    return suite
+    return unittest.TestLoader().loadTestsFromTestCase(SexpEnvironmentTestCase)
 
 if __name__ == '__main__':
     tr = unittest.TextTestRunner(verbosity = 2)

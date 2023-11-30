@@ -28,20 +28,21 @@ def load_tests(loader, standard_tests, pattern):
     suite_EmbeddedR = test_EmbeddedR.suite()
     suite_Device = test_Device.suite()
     suite_SexpExtPtr = test_SexpExtPtr.suite()
-    #suite_EmbeddedR_multithreaded = test_EmbeddedR_multithreaded.suite()
-    alltests = unittest.TestSuite([
-        suite_EmbeddedR
-        ,suite_Sexp
-        ,suite_SexpSymbol
-        ,suite_SexpVector 
-        ,suite_SexpEnvironment 
-        ,suite_SexpClosure
-        ,suite_SexpVectorNumeric
-        #,suite_Device
-        #,suite_EmbeddedR_multithreaded
-        ,suite_SexpExtPtr
-        ])
-    return alltests
+    return unittest.TestSuite(
+        [
+            suite_EmbeddedR,
+            suite_Sexp,
+            suite_SexpSymbol,
+            suite_SexpVector,
+            suite_SexpEnvironment,
+            suite_SexpClosure,
+            suite_SexpVectorNumeric
+            # ,suite_Device
+            # ,suite_EmbeddedR_multithreaded
+            ,
+            suite_SexpExtPtr,
+        ]
+    )
 
 def main():
     tr = unittest.TextTestRunner(verbosity = 2)

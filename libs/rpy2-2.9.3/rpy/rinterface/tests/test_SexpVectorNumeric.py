@@ -69,15 +69,12 @@ class SexpVectorNumericTestCase(unittest.TestCase):
         rarray = rinterface.baseenv['array'](rinterface.IntSexpVector(range(30)),
                                              dim = rinterface.IntSexpVector([5,2,3]))
         npyarray = numpy.array(rarray)
-        for i in range(5):
-            for j in range(2):
-                for k in range(3):
-                    self.assertEqual(extract(rarray, i+1, j+1, k+1)[0], 
-                                      npyarray[i, j, k])
+        for i, j, k in itertools.product(range(5), range(2), range(3)):
+            self.assertEqual(extract(rarray, i+1, j+1, k+1)[0], 
+                              npyarray[i, j, k])
 
 def suite():
-    suite = unittest.TestLoader().loadTestsFromTestCase(SexpVectorNumericTestCase)
-    return suite
+    return unittest.TestLoader().loadTestsFromTestCase(SexpVectorNumericTestCase)
 
 if __name__ == '__main__':
     tr = unittest.TextTestRunner(verbosity = 2)

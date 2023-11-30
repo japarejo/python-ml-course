@@ -33,8 +33,7 @@ class RSlots(object):
         return len(self._robj.list_attrs())
     
     def keys(self):
-        for k in self._robj.list_attrs():
-            yield k
+        yield from self._robj.list_attrs()
 
     __iter__=keys
     
@@ -45,8 +44,7 @@ class RSlots(object):
 
     def values(self):
         for k in self._robj.list_attrs():
-            v = self[k]
-            yield v
+            yield self[k]
 
         
 class RObjectMixin(object):
@@ -79,13 +77,10 @@ class RObjectMixin(object):
 
     def __repr__(self):
         try:
-            rclasses = ('R object with classes: {} mapped to:'
-                        .format(tuple(self.rclass)))
+            rclasses = f'R object with classes: {tuple(self.rclass)} mapped to:'
         except:
-            rclasses = 'Unable to fetch R classes.' + os.linesep
-        res = os.linesep.join((rclasses,
-                               super(RObjectMixin, self).__repr__()))
-        return res
+            rclasses = f'Unable to fetch R classes.{os.linesep}'
+        return os.linesep.join((rclasses, super(RObjectMixin, self).__repr__()))
     
     def __str__(self):
         if sys.platform == 'win32':
@@ -111,7 +106,7 @@ class RObjectMixin(object):
                 os.unlink(tfname)
             except WindowsError:
                 if os.path.exists(tfname):
-                    print('Unable to unlink tempfile %s' % tfname)
+                    print(f'Unable to unlink tempfile {tfname}')
             s = str.join(os.linesep, s)
         else:
             rpy2.rinterface.set_writeconsole_regular(writeconsole)
@@ -134,9 +129,7 @@ class RObjectMixin(object):
 
     def _rclass_get(self):
         try:
-            res = self.__rclass(self)
-            #res = conversion.ri2py(res)
-            return res
+            return self.__rclass(self)
         except rpy2.rinterface.RRuntimeError as rre:
             if self.typeof == rpy2.rinterface.SYMSXP:
                 #unevaluated expression: has no class
@@ -181,7 +174,11 @@ class RObject(RObjectMixin, rpy2.rinterface.Sexp):
     def __setattr__(self, name, value):
         if name == '_sexp':
             if not isinstance(value, rpy2.rinterface.Sexp):
-                raise ValueError("_attr must contain an object " +\
-                                     "that inherits from rpy2.rinterface.Sexp" +\
-                                     "(not from %s)" %type(value))
+                raise ValueError(
+                    (
+                        "_attr must contain an object "
+                        + "that inherits from rpy2.rinterface.Sexp"
+                        + f"(not from {type(value)})"
+                    )
+                )
         super(RObject, self).__setattr__(name, value)

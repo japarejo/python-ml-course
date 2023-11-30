@@ -139,12 +139,11 @@ def ri2py_list(obj):
 # The R magic is opiniated about what the R vectors should become.
 @converter.ri2ro.register(ri.SexpVector)
 def _(obj):
-    if 'data.frame' in obj.rclass:
-        # request to turn it to a pandas DataFrame
-        res = converter.ri2py(obj)
-    else:
-        res = ro.sexpvector_to_ro(obj)
-    return res        
+    return (
+        converter.ri2py(obj)
+        if 'data.frame' in obj.rclass
+        else ro.sexpvector_to_ro(obj)
+    )        
 
 
 @magics_class
@@ -305,7 +304,7 @@ utils.install_packages('Cairo')
                     # reraise the KeyError as a NameError so that it looks like
                     # the standard python behavior when you use an unnamed
                     # variable
-                    raise NameError("name '%s' is not defined" % input)
+                    raise NameError(f"name '{input}' is not defined")
 
             with localconverter(self.converter) as cv:
                 ro.r.assign(input, val)
@@ -424,8 +423,7 @@ utils.install_packages('Cairo')
                 ro.r.png("%s/Rplots%%03d.png" % tmpd_fix_slashes,
                         **argdict)
             elif self.device == 'svg':
-                self.cairo.CairoSVG("%s/Rplot.svg" % tmpd_fix_slashes,
-                                    **argdict)
+                self.cairo.CairoSVG(f"{tmpd_fix_slashes}/Rplot.svg", **argdict)
 
         elif self.device == 'X11':
             # Open a new X11 device, except if the current one is already an X11
@@ -457,13 +455,13 @@ utils.install_packages('Cairo')
         md = {}
 
         if self.device == 'png':
-            for imgfile in sorted( glob("%s/Rplots*png" % graph_dir) ):
+            for imgfile in sorted(glob(f"{graph_dir}/Rplots*png")):
                 if stat(imgfile).st_size >= 1000:
                     with open(imgfile, 'rb') as fh_img:
                         images.append(fh_img.read())
         else:
             # as onefile=TRUE, there is only one .svg file
-            imgfile = "%s/Rplot.svg" % graph_dir
+            imgfile = f"{graph_dir}/Rplot.svg"
             # Cairo creates an SVG file every time R is called
             # -- empty ones are not published
             if stat(imgfile).st_size >= 1000:
@@ -667,11 +665,12 @@ utils.install_packages('Cairo')
                 try:
                     converter = self.shell.user_ns[args.converter]
                 except KeyError:
-                    raise NameError("name '%s' is not defined" % args.converter)
+                    raise NameError(f"name '{args.converter}' is not defined")
             if not isinstance(converter, Converter):
-                raise ValueError("'%s' must be a %s object (but it is a %s)."
-                                 % (args.converter, Converter, type(localconverter)))
-            
+                raise ValueError(
+                    f"'{args.converter}' must be a {Converter} object (but it is a {type(localconverter)})."
+                )
+
         if args.input:
             for input in ','.join(args.input).split(','):
                 try:
@@ -680,7 +679,7 @@ utils.install_packages('Cairo')
                     try:
                         val = self.shell.user_ns[input]
                     except KeyError:
-                        raise NameError("name '%s' is not defined" % input)
+                        raise NameError(f"name '{input}' is not defined")
                 with localconverter(converter) as cv:
                     ro.r.assign(input, val)
 
@@ -744,10 +743,8 @@ utils.install_packages('Cairo')
         if self.cache_display_data:
             self.display_cache = display_data
 
-        # We're in line mode and return_output is still True, 
-        # so return the converted result
-        if return_output and not args.noreturn:
-            if result is not ri.NULL:
+        if result is not ri.NULL:
+            if return_output and not args.noreturn:
                 with localconverter(converter) as cv:
                     res = cv.ri2py(result)
                 return res
@@ -772,8 +769,4 @@ def load_ipython_extension(ip):
     if hasattr(ip, 'has_readline'):
         if ip.has_readline:
             ip.readline.set_completer_delims(ip.readline_delims)
-    else:
-        # ipython >= 5.0.0
-        # not doing anything (for now)
-        pass
 

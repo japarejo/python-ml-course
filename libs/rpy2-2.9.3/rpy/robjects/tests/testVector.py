@@ -210,7 +210,7 @@ class FactorVectorTestCase(unittest.TestCase):
     def testLevels(self):
         vec = robjects.FactorVector(robjects.StrVector('abaabc'))
         self.assertEqual(3, len(vec.levels))
-        self.assertEqual(set(('a','b','c')), set(tuple(vec.levels)))
+        self.assertEqual({'a', 'b', 'c'}, set(tuple(vec.levels)))
     
     def testIter_labels(self):
         values = 'abaabc'
@@ -240,9 +240,7 @@ class DateTimeVectorTestCase(unittest.TestCase):
         pass
 
     def testPOSIXlt_fromInvalidPythonTime(self):
-        x = [time.struct_time(_dateval_tuple), 
-             time.struct_time(_dateval_tuple)]
-        x.append('foo')
+        x = [time.struct_time(_dateval_tuple), time.struct_time(_dateval_tuple), 'foo']
         self.assertRaises(ValueError, robjects.POSIXlt, x)
         
     def testPOSIXlt_fromPythonTime(self):
@@ -252,9 +250,7 @@ class DateTimeVectorTestCase(unittest.TestCase):
         self.assertEqual(2, len(x))
 
     def testPOSIXct_fromInvalidPythonTime(self):
-        x = [time.struct_time(_dateval_tuple), 
-             time.struct_time(_dateval_tuple)]
-        x.append('foo')
+        x = [time.struct_time(_dateval_tuple), time.struct_time(_dateval_tuple), 'foo']
         # string 'foo' does not have attribute 'tm_zone'  
         self.assertRaises(AttributeError, robjects.POSIXct, x)
 
@@ -286,10 +282,7 @@ class ExtractDelegatorTestCase(unittest.TestCase):
         
     def testFloorDivision(self):
         v = robjects.vectors.IntVector((2,3,4))
-        if sys.version_info[0] == 2:
-            res = v.ro / 2
-        else:
-            res = v.ro // 2
+        res = v.ro / 2 if sys.version_info[0] == 2 else v.ro // 2
         self.assertEqual((1,1,2), tuple(int(x) for x in res))
             
     def testExtractByIndex(self):
@@ -404,7 +397,7 @@ class ConversionHelperTestCase(unittest.TestCase):
         res = robjects.sequence_to_vector((1,2,'a'))
         self.assertTrue(isinstance(res, robjects.StrVector))
 
-        self.assertRaises(ValueError, robjects.sequence_to_vector, list())
+        self.assertRaises(ValueError, robjects.sequence_to_vector, [])
 
 def suite():
     suite = unittest.TestLoader().loadTestsFromTestCase(VectorTestCase)

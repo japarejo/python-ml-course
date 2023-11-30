@@ -124,8 +124,7 @@ class R_A(methods.RS4, metaclass=methods.RS4_Type):
 
 
 def suite():
-    suite = unittest.TestLoader().loadTestsFromTestCase(MethodsTestCase)
-    return suite
+    return unittest.TestLoader().loadTestsFromTestCase(MethodsTestCase)
 
 if __name__ == '__main__':
      unittest.main()

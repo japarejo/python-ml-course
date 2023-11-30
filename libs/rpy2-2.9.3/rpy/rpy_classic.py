@@ -133,27 +133,22 @@ def seq2vec(seq):
             
 def py2rpy(obj):
     if isinstance(obj, int):
-        robj = ri.SexpVector([obj, ], ri.INTSXP)
-        return robj 
+        return ri.SexpVector([obj, ], ri.INTSXP)
     if isinstance(obj, float):
-        robj = ri.SexpVector([obj, ], ri.REALSXP)
-        return robj 
+        return ri.SexpVector([obj, ], ri.REALSXP)
     if isinstance(obj, str):
-        robj = ri.SexpVector([obj, ], ri.STRSXP)
-        return robj 
+        return ri.SexpVector([obj, ], ri.STRSXP)
     if isinstance(obj, complex):
-        robj = ri.SexpVector([obj, ], ri.CPLSXP)
-        return robj 
-    if isinstance(obj, list) or isinstance(obj, tuple):
-        robj = seq2vec(obj)
-        return robj
+        return ri.SexpVector([obj, ], ri.CPLSXP)
+    if isinstance(obj, (list, tuple)):
+        return seq2vec(obj)
     raise ValueError("Don't know what to do with 'obj'.")
 
 def rpy2py_basic(obj):    
     if hasattr(obj, '__len__'):
         if obj.typeof in [ri.INTSXP, ri.REALSXP, ri.CPLXSXP,
                           ri.LGLSXP,ri.STRSXP]:
-            res = [x for x in obj]
+            res = list(obj)
         elif obj.typeof in [ri.VECSXP]:
             try:
                 # if the returned objects is a list with names, return a dict
@@ -178,11 +173,9 @@ def rpy2py(obj, mode=None):
     if mode is None:
         mode = default_mode
     if mode == NO_CONVERSION:
-        res = Robj(obj)
-        return res
+        return Robj(obj)
     if mode == BASIC_CONVERSION:
-        res = rpy2py_basic(obj)
-        return res
+        return rpy2py_basic(obj)
     raise ValueError("Invalid default mode.")
 
 class Robj(object):
@@ -198,7 +191,9 @@ class Robj(object):
     def __init__(self, sexp):
 
         if not isinstance(sexp, ri.Sexp):
-            raise ValueError('"sexp" must inherit from rinterface.Sexp (not %s)' %str(type(sexp)))
+            raise ValueError(
+                f'"sexp" must inherit from rinterface.Sexp (not {str(type(sexp))})'
+            )
         self.__sexp = sexp
 
     def __call__(self, *args, **kwargs):
@@ -248,8 +243,7 @@ class Robj(object):
     def as_py(self, mode = None):
         if mode is None:
             mode = default_mode
-        res = rpy2py(self.__sexp, mode = mode)
-        return res
+        return rpy2py(self.__sexp, mode = mode)
 
     def __local_mode(self, mode = default_mode):
         self.__local_mode = mode
@@ -269,8 +263,7 @@ class R(object):
             name = name[:-1]
         name = name.replace('__', '<-')
         name = name.replace('_', '.')
-        res = self.__getitem__(name)
-        return res
+        return self.__getitem__(name)
 
     def __getitem__(self, name):
         #FIXME: "get function only" vs "get anything"
@@ -287,8 +280,7 @@ class R(object):
         
     def __repr__(self):
         r_version = ri.baseenv['R.version.string'][0]
-        res = 'RPy version %s with %s' %(RPY_VERSION, r_version)
-        return res
+        return f'RPy version {RPY_VERSION} with {r_version}'
 
     def __str__(self):
         return repr(self)

@@ -8,7 +8,7 @@ if sys.version_info[0] < 3 or \
         def __repr__(self):
             keys = sorted(self.__dict__)
             items = ("{}={!r}".format(k, self.__dict__[k]) for k in keys)
-            return "{}({})".format(type(self).__name__, ", ".join(items))
+            return f'{type(self).__name__}({", ".join(items)})'
         def __eq__(self, other):
             return self.__dict__ == other.__dict__
 else:
@@ -83,7 +83,7 @@ def getclassdef(cls_name, cls_packagename):
     return cls_def
 
 class RS4_Type(type):
-    def __new__(mcs, name, bases, cls_dict):
+    def __new__(cls, name, bases, cls_dict):
 
         try:
             cls_rname = cls_dict['__rname__']
@@ -94,21 +94,21 @@ class RS4_Type(type):
             accessors = cls_dict['__accessors__']
         except KeyError as ke:
             accessors = []
-            
+
         for rname, where, \
-                python_name, as_property, \
-                docstring in accessors:
+                    python_name, as_property, \
+                    docstring in accessors:
 
             if where is None:
                 where = rinterface.globalenv
             else:
-                where = "package:" + str(where)
+                where = f"package:{str(where)}"
                 where = StrSexpVector((where, ))
 
             if python_name is None:
                 python_name = rname
-                
-            signature = StrSexpVector((cls_rname, ))            
+
+            signature = StrSexpVector((cls_rname, ))
             r_meth = getmethod(StrSexpVector((rname, )), 
                                signature = signature,
                                where = where)
@@ -118,8 +118,8 @@ class RS4_Type(type):
                                                  doc = docstring)
             else:
                 cls_dict[python_name] =  lambda self: r_meth(self)
-                
-        return type.__new__(mcs, name, bases, cls_dict)
+
+        return type.__new__(cls, name, bases, cls_dict)
 
 # playground to experiment with more metaclass-level automation
 
@@ -131,7 +131,7 @@ class RS4Auto_Type(type):
     attributes: __rname__, __rpackagename__, __attr__translation,
     __meth_translation__.
     """
-    def __new__(mcs, name, bases, cls_dict):
+    def __new__(cls, name, bases, cls_dict):
         try:
             cls_rname = cls_dict['__rname__']
         except KeyError as ke:
@@ -152,7 +152,7 @@ class RS4Auto_Type(type):
             cls_meth_translation = {}
 
         cls_def = getclassdef(cls_rname, cls_rpackagename)
-    
+
         # documentation / help
         if cls_rpackagename is None:
             cls_dict['__doc__'] = "Undocumented class from the R workspace."
@@ -161,7 +161,7 @@ class RS4Auto_Type(type):
             page_help = None
             try:
                 #R's classes are sometimes documented with a prefix 'class.'
-                page_help = pack_help.fetch(cls_def.__rname__ + "-class")
+                page_help = pack_help.fetch(f"{cls_def.__rname__}-class")
             except rhelp.HelpNotFoundError as hnf:
                 pass
             if page_help is None:
@@ -173,7 +173,7 @@ class RS4Auto_Type(type):
                 cls_dict['__doc__'] = 'Unable to fetch R documentation for the class'
             else:
                 cls_dict['__doc__'] = ''.join(page_help.to_docstring())
-        
+
         for slt_name in cls_def.slots:
             #FIXME: sanity check on the slot name
             try:
@@ -217,12 +217,12 @@ class RS4Auto_Type(type):
                 # is a setter of some sort. We reflect that by adding a 'set_'
                 # prefix to the Python name (and of course remove the suffix '<-').
                 if funcname.endswith('<-'):
-                    meth_name = 'set_' + funcname[:-2] + '__' + meth_name
+                    meth_name = f'set_{funcname[:-2]}__{meth_name}'
                 else:
-                    meth_name = funcname + '__' + meth_name
+                    meth_name = f'{funcname}__{meth_name}'
                 # finally replace remaining '.'s in the Python name with '_'s
                 meth_name = meth_name.replace('.', '_')
-                
+
             #FIXME: sanity check on the function name
                 try:
                     meth_name = cls_meth_translation[meth_name]
@@ -231,12 +231,12 @@ class RS4Auto_Type(type):
                     pass
 
             #FIXME: isolate the slot documentation and have it here
-                
+
                 if meth_name in cls_dict:
                     raise Error("Duplicated attribute/method name.")
                 cls_dict[meth_name] = meth
 
-        return type.__new__(mcs, name, bases, cls_dict)
+        return type.__new__(cls, name, bases, cls_dict)
 
 
 def set_accessors(cls, cls_name, where, acs):
@@ -245,7 +245,7 @@ def set_accessors(cls, cls_name, where, acs):
     if where is None:
         where = rinterface.globalenv
     else:
-        where = "package:" + str(where)
+        where = f"package:{str(where)}"
         where = StrSexpVector((where, ))
 
     for r_name, python_name, as_property, docstring in acs:
@@ -261,7 +261,7 @@ def set_accessors(cls, cls_name, where, acs):
             setattr(cls, python_name, lambda self: r_meth(self))
 
 def get_classnames(packname):
-    res = methods_env['getClasses'](where = StrSexpVector(("package:%s" %packname, )))
+    res = methods_env['getClasses'](where=StrSexpVector((f"package:{packname}", )))
     return tuple(res)
 
 # Namespace to store the definition of RS4 classes

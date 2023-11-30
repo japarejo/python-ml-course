@@ -23,7 +23,7 @@ def _load_r_dll(r_home):
     r_bin = os.path.join(r_home, 'bin', r_arch)
     r_dll = os.path.join(r_bin, 'R.dll')
     if not os.path.exists(r_dll):
-        raise RuntimeError("Unable to locate R.dll at %s" % r_dll)
+        raise RuntimeError(f"Unable to locate R.dll at {r_dll}")
     if r_bin not in os.environ.get('PATH'):
         os.environ['PATH'] = ';'.join((os.environ.get('PATH'), r_bin, r_mod))
     ctypes.CDLL(r_dll)
@@ -173,8 +173,7 @@ set_showmessage(consoleMessage)
 
 
 def chooseFile(prompt):
-    res = raw_input(prompt)
-    return res
+    return raw_input(prompt)
 set_choosefile(chooseFile)
 
 def showFiles(wtitle, titlefiles, rdel, pager):
@@ -182,10 +181,9 @@ def showFiles(wtitle, titlefiles, rdel, pager):
 
     for wt in wtitle:
         sys.stdout.write(wt[0])
-        f = open(wt[1])
-        for row in f:
-            sys.stdout.write(row)
-        f.close()
+        with open(wt[1]) as f:
+            for row in f:
+                sys.stdout.write(row)
     return 0
 set_showfiles(showFiles)
 

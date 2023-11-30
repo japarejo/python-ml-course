@@ -42,8 +42,7 @@ class RpyClassicTestCase(unittest.TestCase):
         self.assertRaises(AttributeError, setattr, pi, 'sexp', None)
 
 def suite():
-    suite = unittest.defaultTestLoader.loadTestsFromTestCase(RpyClassicTestCase)
-    return suite
+    return unittest.defaultTestLoader.loadTestsFromTestCase(RpyClassicTestCase)
 
 if __name__ == '__main__':
      unittest.main()

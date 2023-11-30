@@ -66,7 +66,7 @@ class SexpTestCase(unittest.TestCase):
         sexp = rinterface.globalenv.get("iris")
         iris_names = rinterface.StrSexpVector(['a', 'b', 'c', 'd', 'e'])
         sexp.do_slot_assign("names", iris_names)
-        names = [x for x in sexp.do_slot("names")]
+        names = list(sexp.do_slot("names"))
         self.assertEqual(['a', 'b', 'c', 'd', 'e'], names)
 
     def testDo_slot_assign_create(self):

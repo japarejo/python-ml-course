@@ -16,23 +16,14 @@ original_converter = None
 # The possible kind codes are listed at
 #   http://numpy.scipy.org/array_interface.shtml
 _kinds = {
-    # "t" -> not really supported by numpy
     "b": rinterface.LGLSXP,
     "i": rinterface.INTSXP,
-    # "u" -> special-cased below
     "f": rinterface.REALSXP,
     "c": rinterface.CPLXSXP,
-    # "O" -> special-cased below
     "S": rinterface.STRSXP,
     "U": rinterface.STRSXP,
-    # "V" -> special-cased below
-    #FIXME: datetime64 ?
-    #"datetime64":
-    }
-
-#FIXME: the following would need further thinking & testing on
-#       32bits architectures
-_kinds['float64'] = rinterface.REALSXP
+    'float64': rinterface.REALSXP,
+}
 
 _vectortypes = (rinterface.LGLSXP,
                 rinterface.INTSXP,
@@ -51,19 +42,18 @@ import sys
 if sys.version_info[0] == 3:
     def numpy_O_py2ri(o):
         if all(isinstance(x, str) for x in o):
-            res = StrSexpVector(o)
+            return StrSexpVector(o)
         elif all(isinstance(x, bytes) for x in o):
-            res = ByteSexpVector(o)
+            return ByteSexpVector(o)
         else:
-            res = conversion.py2ri(list(o))
-        return res
+            return conversion.py2ri(list(o))
 else:
     def numpy_O_py2ri(o):
-        if all((isinstance(x, str) or isinstance(x, bytes) or isinstance(x, unicode)) for x in o):
-            res = StrSexpVector(o)
-        else:
-            res = conversion.py2ri(list(o))
-        return res
+        return (
+            StrSexpVector(o)
+            if all(isinstance(x, (str, bytes, unicode)) for x in o)
+            else conversion.py2ri(list(o))
+        )
     
 @py2ri.register(numpy.ndarray)
 def numpy2ri(o):
@@ -80,24 +70,22 @@ def numpy2ri(o):
         #FIXME: no dimnames ?
         #FIXME: optimize what is below needed/possible ? (other ways to create R arrays ?)
         res = rinterface.baseenv['array'](vec, dim=dim)
-    # R does not support unsigned types:
     elif o.dtype.kind == "u":
         raise(ValueError("Cannot convert numpy array of unsigned values -- R does not have unsigned integers."))
-    # Array-of-PyObject is treated like a Python list:
     elif o.dtype.kind == "O":
         res = numpy_O_py2ri(o)
-    # Record arrays map onto R data frames:
     elif o.dtype.kind == "V":
         if o.dtype.names is None:
-            raise(ValueError("Nothing can be done for this numpy array type %s at the moment." % (o.dtype,)))
-        df_args = []
-        for field_name in o.dtype.names:
-            df_args.append((field_name,
-                            conversion.py2ri(o[field_name])))
+            raise ValueError(
+                f"Nothing can be done for this numpy array type {o.dtype} at the moment."
+            )
+        df_args = [
+            (field_name, conversion.py2ri(o[field_name]))
+            for field_name in o.dtype.names
+        ]
         res = ro.baseenv["data.frame"].rcall(tuple(df_args), ro.globalenv)
-    # It should be impossible to get here:
     else:
-        raise(ValueError("Unknown numpy array type '%s'." % str(o.dtype)))
+        raise ValueError(f"Unknown numpy array type '{str(o.dtype)}'.")
     return res
 
 @py2ri.register(numpy.integer)
@@ -130,36 +118,35 @@ def numpy2ro(obj):
 
 @ri2py.register(ListSexpVector)
 def ri2py_list(obj):
-    if 'data.frame' in obj.rclass:
+    if 'data.frame' not in obj.rclass:
+        # not a data.frame, yet is it still possible to convert it
+        return ro.default_converter.ri2py(obj)
         # R "factor" vectors will not convert well by default
         # (will become integers), so we build a temporary list o2
         # with the factors as strings.
-        o2 = list()
-        # An added complication is that the conversion defined
-        # in this module will make __getitem__ at the robjects
-        # level return numpy arrays
-        for column in rinterface.ListSexpVector(obj):
-            if 'factor' in column.rclass:
-                levels = tuple(column.do_slot("levels"))
-                column = tuple(levels[x-1] for x in column)
-            o2.append(column)
-        names = obj.do_slot('names')
-        if names is NULL:
-            res = numpy.rec.fromarrays(o2)
-        else:
-            res = numpy.rec.fromarrays(o2, names=tuple(names))
-    else:
-        # not a data.frame, yet is it still possible to convert it
-        res = ro.default_converter.ri2py(obj)
-    return res
+    o2 = []
+    # An added complication is that the conversion defined
+    # in this module will make __getitem__ at the robjects
+    # level return numpy arrays
+    for column in rinterface.ListSexpVector(obj):
+        if 'factor' in column.rclass:
+            levels = tuple(column.do_slot("levels"))
+            column = tuple(levels[x-1] for x in column)
+        o2.append(column)
+    names = obj.do_slot('names')
+    return (
+        numpy.rec.fromarrays(o2)
+        if names is NULL
+        else numpy.rec.fromarrays(o2, names=tuple(names))
+    )
 
 @ri2py.register(Sexp)
 def ri2py_sexp(obj):
-    if (obj.typeof in _vectortypes) and (obj.typeof != VECSXP):
-        res = numpy.asarray(obj)
-    else:
-        res = ro.default_converter.ri2py(obj)
-    return res
+    return (
+        numpy.asarray(obj)
+        if (obj.typeof in _vectortypes) and (obj.typeof != VECSXP)
+        else ro.default_converter.ri2py(obj)
+    )
 
 def activate():
     global original_converter

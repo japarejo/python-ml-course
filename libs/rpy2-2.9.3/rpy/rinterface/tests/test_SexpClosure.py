@@ -84,9 +84,9 @@ class SexpClosureTestCase(unittest.TestCase):
 
         mylist = rinterface.baseenv['list'].rcall(tuple(ad.items()), 
                                                   rinterface.globalenv)
-        
-        names = [x for x in mylist.do_slot("names")]
-        
+
+        names = list(mylist.do_slot("names"))
+
         for i in range(4):
             self.assertEqual(('a', 'b', '', 'c')[i], names[i])
 
@@ -117,8 +117,7 @@ class SexpClosureTestCase(unittest.TestCase):
         self.assertEqual(True, fun(missing)[0])
 
     def testScalarConvertInteger(self):
-        self.assertEqual('integer',
-                          rinterface.baseenv["typeof"](int(1))[0])
+        self.assertEqual('integer', rinterface.baseenv["typeof"](1)[0])
 
     def testScalarConvertDouble(self):
         self.assertEqual('double', 
@@ -130,8 +129,7 @@ class SexpClosureTestCase(unittest.TestCase):
         
 
 def suite():
-    suite = unittest.TestLoader().loadTestsFromTestCase(SexpClosureTestCase)
-    return suite
+    return unittest.TestLoader().loadTestsFromTestCase(SexpClosureTestCase)
 
 if __name__ == '__main__':
     tr = unittest.TextTestRunner(verbosity = 2)

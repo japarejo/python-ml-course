@@ -40,7 +40,7 @@ class EmbeddedRTestCase(unittest.TestCase):
             sys.stdout = stdout
             tmp_file.flush()
             tmp_file.seek(0)
-            self.assertEqual('haha', ''.join(s for s in tmp_file).rstrip())
+            self.assertEqual('haha', ''.join(tmp_file).rstrip())
             tmp_file.close()
         else:
             # no need to test which Python 2, only 2.7 supported
@@ -139,10 +139,8 @@ class EmbeddedRTestCase(unittest.TestCase):
 
     def testRternalizeNamedArgs(self):
         def f(x, y, z=None):
-            if z is None:
-                return x[0]+y[0]
-            else:
-                return z
+            return x[0]+y[0] if z is None else z
+
         rfun = rinterface.rternalize(f)
         res = rfun(1, 2)
         self.assertEqual(3, res[0])
@@ -215,10 +213,11 @@ except Exception as e:
         x = rinterface.SexpVector(range(10), rinterface.INTSXP)
         y = rinterface.SexpVector(range(10), rinterface.INTSXP)
         x_rid = x.rid
-        self.assertTrue(x_rid in set(z[0] for z in rinterface.protected_rids()))
+        self.assertTrue(x_rid in {z[0] for z in rinterface.protected_rids()})
         del(x)
-        gc.collect(); gc.collect()
-        self.assertFalse(x_rid in set(z[0] for z in rinterface.protected_rids()))
+        gc.collect()
+        gc.collect()
+        self.assertFalse(x_rid in {z[0] for z in rinterface.protected_rids()})
 
 class CallbacksTestCase(unittest.TestCase):
     def tearDown(self):

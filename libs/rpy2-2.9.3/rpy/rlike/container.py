@@ -18,12 +18,12 @@ class OrdDict(dict):
 
     def __init__(self, c=[]):
 
-        if isinstance(c, TaggedList) or isinstance(c, OrdDict):
+        if isinstance(c, (TaggedList, OrdDict)):
             c = c.items()
         elif isinstance(c, dict):
             #FIXME: allow instance from OrdDict ?
             raise ValueError('A regular dictionnary does not ' +\
-                             'conserve the order of its keys.')
+                                 'conserve the order of its keys.')
 
         super(OrdDict, self).__init__()
         self.__l = []
@@ -32,8 +32,7 @@ class OrdDict(dict):
             self[k] = v
 
     def __copy__(self):
-        cp = OrdDict(c = tuple(self.items()))
-        return cp
+        return OrdDict(c = tuple(self.items()))
         
     def __cmp__(self, o):
         raise(Exception("Not yet implemented."))
@@ -65,7 +64,7 @@ class OrdDict(dict):
     def __repr__(self):
         s = 'o{'
         for k,v in self.items():
-            s += "'" + str(k) + "': " + str(v) + ", "
+            s += f"'{str(k)}': {str(v)}, "
         s += '}'
         return s
 
@@ -110,7 +109,7 @@ class OrdDict(dict):
 
     def keys(self):
         """ """
-        return tuple([x[0] for x in self.__l])
+        return tuple(x[0] for x in self.__l)
 
     def reverse(self):
         """ Reverse the order of the elements in-place (no copy)."""
@@ -145,9 +144,7 @@ class TaggedList(list):
             tags = tl.tags
         except AttributeError as ae:
             raise ValueError('Can only concatenate TaggedLists.')
-        res = TaggedList(list(self) + list(tl),
-                         tags = self.tags + tl.tags)
-        return res
+        return TaggedList(list(self) + list(tl), tags=self.tags + tl.tags)
 
     def __delitem__(self, y):
         super(TaggedList, self).__delitem__(y)
@@ -232,7 +229,7 @@ class TaggedList(list):
         :rtype: tuple of 2-element tuples (tag, item)
         """
 
-        res = [(tag, item) for tag, item in zip(self.__tags, self)]
+        res = list(zip(self.__tags, self))
         return tuple(res)
 
     def iterontag(self, tag):
@@ -242,16 +239,13 @@ class TaggedList(list):
         :param tag: object
         """
 
-        i = 0
-        for onetag in self.__tags:
+        for i, onetag in enumerate(self.__tags):
             if tag == onetag:
                 yield self[i]
-            i += 1
 
     def items(self):
         """ OD.items() -> an iterator over the (key, value) items of D """
-        for tag, item in zip(self.__tags, self):
-            yield (tag, item)
+        yield from zip(self.__tags, self)
         
     def itertags(self):
         """
@@ -259,8 +253,7 @@ class TaggedList(list):
         
         :rtype: iterator
         """
-        for tag in self.__tags:
-            yield tag
+        yield from self.__tags
 
     def pop(self, index=None):
         """

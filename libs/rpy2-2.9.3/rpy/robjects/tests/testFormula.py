@@ -23,8 +23,7 @@ class FormulaTestCase(unittest.TestCase):
         self.assertTrue(newenv.rsame(env))
 
 def suite():
-    suite = unittest.TestLoader().loadTestsFromTestCase(FormulaTestCase)
-    return suite
+    return unittest.TestLoader().loadTestsFromTestCase(FormulaTestCase)
 
 if __name__ == '__main__':
      unittest.main()

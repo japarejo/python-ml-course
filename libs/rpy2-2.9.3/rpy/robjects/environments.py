@@ -43,7 +43,7 @@ class Environment(RObjectMixin, rinterface.SexpEnvironment):
 
     def keys(self):
         """ Return a tuple listing the keys in the object """
-        return (x for x in self)
+        return iter(self)
 
     def items(self):
         """ Iterate through the symbols and associated objects in
